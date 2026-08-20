@@ -37,6 +37,11 @@
   .hint{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.6;margin-top:12px}
   .sect{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:800}
   .adm .btn{width:100%}
+  .stack{padding:12px 0;border-bottom:1px solid var(--line)}
+  .stack:last-child{border-bottom:0}
+  .stack .lbl{font-size:14.5px;font-weight:700;margin-bottom:9px}
+  .stack .lbl small{display:block;color:var(--muted);font-size:11.5px;font-weight:600;margin-top:3px;line-height:1.45}
+  .stack input{width:100%}
   input[type=password]{
     width:100%;padding:14px 16px;border-radius:16px;font-size:16px;font-weight:600;color:var(--ink);
     background:var(--soft);border:1.5px solid transparent;outline:none;appearance:none;
@@ -142,10 +147,34 @@
   </div>
 
   <div class="glass card">
+    <div class="sect">Доступ</div>
+    <div class="stack">
+      <div class="lbl">Новий пароль до цієї панелі<small>Щоб передати керування іншій людині — задайте пароль і повідомте його їй</small></div>
+      <input type="password" id="newPassword" placeholder="Мінімум 6 символів" autocomplete="new-password">
+    </div>
+    <div class="stack">
+      <div class="lbl">Повторіть новий пароль</div>
+      <input type="password" id="newPassword2" placeholder="Ще раз" autocomplete="new-password">
+    </div>
+    <div class="stack">
+      <div class="lbl">Токен бота<small>Якщо бота замінили на іншого — вставте новий токен від @BotFather. Поточний не показується</small></div>
+      <input type="text" id="botToken" placeholder="1234567890:AAG…" autocomplete="off">
+    </div>
+    <button class="btn" id="saveAccess" style="margin-top:12px">Зберегти доступ</button>
+    <div class="msg ok hidden" id="accOk" style="margin-top:10px"></div>
+    <div class="msg err hidden" id="accErr" style="margin-top:10px"></div>
+    <div class="hint">
+      Після зміни пароля вас перезапитають увійти. Старий пароль, заданий у Cloudflare,
+      продовжує працювати як запасний — щоб ніхто не втратив доступ назавжди.
+      Якщо міняли токен бота, натисніть після цього «Підключити бота» нижче.
+    </div>
+  </div>
+
+  <div class="glass card">
     <div class="sect">Telegram-бот</div>
-    <div class="row">
+    <div class="stack">
       <div class="lbl">Адреса калькулятора<small>Її відкриває кнопка в боті. Міняти треба лише якщо переїхав сайт</small></div>
-      <input type="text" id="appUrl" placeholder="https://…" style="width:100%;flex:1 1 auto;margin-top:6px">
+      <input type="text" id="appUrl" placeholder="https://…">
     </div>
     <button class="btn" id="tgSetup" style="margin-top:12px">Підключити бота</button>
     <div class="msg ok hidden" id="tgOk" style="margin-top:10px"></div>
@@ -297,6 +326,43 @@ $('#save').addEventListener('click', function () {
     .catch(function () {
       $('#save').disabled = false;
       show('errMsg', 'Сервер не відповідає. Спробуйте ще раз.', true);
+    });
+});
+
+$('#saveAccess').addEventListener('click', function () {
+  var p1 = $('#newPassword').value.trim();
+  var p2 = $('#newPassword2').value.trim();
+  var bt = $('#botToken').value.trim();
+  show('accOk', '', false); show('accErr', '', false);
+
+  if (!p1 && !bt) { show('accErr', 'Заповніть хоча б одне поле.', true); return; }
+  if (p1 && p1 !== p2) { show('accErr', 'Паролі не збігаються.', true); return; }
+  if (p1 && p1.length < 6) { show('accErr', 'Пароль закороткий — мінімум 6 символів.', true); return; }
+
+  var body = {};
+  if (p1) body.newPassword = p1;
+  if (bt) body.botToken = bt;
+
+  var b = this; b.disabled = true; b.textContent = 'Зберігаємо…';
+  fetch(API + '/access', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Key': KEY },
+    body: JSON.stringify(body)
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      b.disabled = false; b.textContent = 'Зберегти доступ';
+      if (!d.ok) { show('accErr', d.error || 'Не вдалося зберегти.', true); return; }
+      show('accOk', 'Змінено: ' + d.changed.join(', ') + '.', true);
+      $('#newPassword').value = ''; $('#newPassword2').value = ''; $('#botToken').value = '';
+      if (p1) {
+        KEY = p1;
+        try { sessionStorage.setItem('admKey', p1); } catch (e) {}
+      }
+    })
+    .catch(function () {
+      b.disabled = false; b.textContent = 'Зберегти доступ';
+      show('accErr', 'Сервер не відповідає.', true);
     });
 });
 
