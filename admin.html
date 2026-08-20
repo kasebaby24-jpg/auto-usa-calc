@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070f">
+<meta name="robots" content="noindex, nofollow">
+<title>Адмін-панель — Авто з США</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  body{padding-bottom:40px}
+  .adm{max-width:620px;margin:0 auto;padding:22px 14px 60px}
+  .adm h1{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+  .adm .sub{color:var(--muted);font-size:13.5px;font-weight:600;margin-bottom:20px}
+  .adm .card{margin-bottom:12px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .lbl{font-size:14.5px;font-weight:700;flex:1;min-width:0}
+  .row .lbl small{display:block;color:var(--muted);font-size:11.5px;font-weight:600;margin-top:3px;line-height:1.45}
+  .row input[type=number]{width:118px;flex:0 0 118px;text-align:right;padding:12px 14px;font-size:15px}
+  .row input[type=text]{width:158px;flex:0 0 158px;padding:12px 14px;font-size:15px}
+  .sw{position:relative;width:52px;height:31px;flex:0 0 52px;border-radius:16px;background:var(--line);cursor:pointer;transition:.2s}
+  .sw.on{background:var(--lime)}
+  .sw i{position:absolute;top:3px;left:3px;width:25px;height:25px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 4px rgba(16,22,34,.2)}
+  .sw.on i{left:24px}
+  .msg{padding:13px 16px;border-radius:16px;font-size:13.5px;font-weight:600;margin-bottom:12px;line-height:1.5}
+  .msg.ok{background:#EAF8D8;color:#3D6B00}
+  .msg.err{background:#FFEDE8;color:#B93A17}
+  .msg.inf{background:var(--soft);color:var(--ink2)}
+  .actions{display:flex;gap:9px;margin-top:8px}
+  .actions .btn{flex:1}
+  .gate{max-width:400px;margin:12vh auto 0;padding:0 16px}
+  .gate .card{padding:26px 22px}
+  .gate h1{text-align:center;font-size:23px;margin-bottom:4px}
+  .gate .sub{text-align:center}
+  .gate input{margin-bottom:11px}
+  .hint{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.6;margin-top:12px}
+  .sect{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:800}
+  .adm .btn{width:100%}
+  input[type=password]{
+    width:100%;padding:14px 16px;border-radius:16px;font-size:16px;font-weight:600;color:var(--ink);
+    background:var(--soft);border:1.5px solid transparent;outline:none;appearance:none;
+  }
+  input[type=password]:focus{border-color:var(--ink);background:#fff}
+  input[type=password]::placeholder{color:#A8B0BC;font-weight:500}
+  .gate .btn{width:100%}
+  .gate .sub{margin-bottom:18px}
+</style>
+</head>
+<body>
+
+<!-- ВХІД -->
+<div class="gate" id="gate">
+  <div class="glass card">
+    <h1>Адмін-панель</h1>
+    <div class="sub">Авто з США — калькулятор</div>
+    <div class="msg err hidden" id="gateErr"></div>
+    <input type="password" id="pass" placeholder="Пароль" autocomplete="current-password">
+    <button class="btn btn--primary" id="login">Увійти</button>
+    <div class="hint">Пароль задає розробник у Cloudflare. Якщо не пам'ятаєте — його можна змінити там же.</div>
+  </div>
+</div>
+
+<!-- ПАНЕЛЬ -->
+<div class="adm hidden" id="panel">
+  <h1>Налаштування</h1>
+  <div class="sub">Зміни діють одразу для всіх користувачів додатку</div>
+
+  <div class="msg inf" id="info">Завантаження…</div>
+
+  <div class="glass card">
+    <div class="sect">Послуги</div>
+    <div class="row">
+      <div class="lbl">Експедиторські послуги<small>Базова сума для звичайних авто</small></div>
+      <input type="number" id="serviceBase" step="1">
+    </div>
+    <div class="row">
+      <div class="lbl">Комісія за обслуговування<small>Показується окремим рядком</small></div>
+      <input type="number" id="serve" step="1">
+    </div>
+    <div class="row">
+      <div class="lbl">Надбавка за пікап, EUR<small>Додається до експедиторських</small></div>
+      <input type="number" id="servicePickupEur" step="1">
+    </div>
+    <div class="row">
+      <div class="lbl">Надбавка за VAN, EUR<small>Додається до експедиторських</small></div>
+      <input type="number" id="serviceVanEur" step="1">
+    </div>
+  </div>
+
+  <div class="glass card">
+    <div class="sect">Приховані надбавки</div>
+    <div class="row">
+      <div class="lbl">Доставка США → порт, $<small>Входить у ціну доставки. Окремим рядком клієнту не видно</small></div>
+      <input type="number" id="portMargin" step="1">
+    </div>
+    <div class="row">
+      <div class="lbl">Доставка по Україні, $<small>Так само — всередині ціни доставки</small></div>
+      <input type="number" id="uaMargin" step="1">
+    </div>
+    <div class="row">
+      <div class="lbl">Страхування, %<small>Враховується у доставці до порту. Клієнт про нього не бачить згадок</small></div>
+      <input type="number" id="insurancePct" step="0.1">
+    </div>
+  </div>
+
+  <div class="glass card">
+    <div class="sect">Комісія за переказ коштів</div>
+    <div class="row">
+      <div class="lbl">Показувати клієнту<small>Якщо вимкнути — комісія не рахується взагалі</small></div>
+      <div class="sw" id="showTransfer"><i></i></div>
+    </div>
+    <div class="row">
+      <div class="lbl">Базова ставка, %<small>На лот, доставку до порту й експедиторські</small></div>
+      <input type="number" id="transferPct" step="0.1">
+    </div>
+    <div class="row">
+      <div class="lbl">Ставка для великих лотів, %<small>Знижена ставка на саму суму лоту</small></div>
+      <input type="number" id="transferPctBigLot" step="0.1">
+    </div>
+    <div class="row">
+      <div class="lbl">Великий лот — від, $<small>Від якої суми діє знижена ставка</small></div>
+      <input type="number" id="transferBigLotFrom" step="100">
+    </div>
+    <div class="row">
+      <div class="lbl">Ставка на доставку по Україні, %<small>Зазвичай нижча за базову</small></div>
+      <input type="number" id="transferUaPct" step="0.1">
+    </div>
+  </div>
+
+  <div class="glass card">
+    <div class="sect">Контакти в додатку</div>
+    <div class="row">
+      <div class="lbl">Telegram<small>Без «@»</small></div>
+      <input type="text" id="contactTg" placeholder="evvgenij">
+    </div>
+    <div class="row">
+      <div class="lbl">Телефон<small>У форматі +380…</small></div>
+      <input type="text" id="contactPhone" placeholder="+380505155904">
+    </div>
+  </div>
+
+  <div class="msg ok hidden" id="okMsg"></div>
+  <div class="msg err hidden" id="errMsg"></div>
+
+  <div class="actions">
+    <button class="btn btn--primary" id="save">Зберегти</button>
+    <button class="btn" id="reload">Скасувати</button>
+  </div>
+  <div class="hint">
+    Порада: після збереження відкрийте калькулятор і перевірте суму на будь-якому лоті.
+    Якщо щось виглядає не так — натисніть «Скасувати», значення повернуться до збережених на сервері.
+  </div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   Адрес сервера. Той самий Worker, що й у калькуляторі.
+   ------------------------------------------------------------------ */
+var API = 'https://dry-cherry-8689.kasebaby24.workers.dev';
+
+var NUM = ['serviceBase','serve','servicePickupEur','serviceVanEur','portMargin','uaMargin',
+           'insurancePct','transferPct','transferPctBigLot','transferBigLotFrom','transferUaPct'];
+var TXT = ['contactTg','contactPhone'];
+var $ = function (s) { return document.querySelector(s); };
+var KEY = '';
+
+function show(id, txt, on) {
+  var e = $('#' + id);
+  e.textContent = txt || '';
+  e.classList.toggle('hidden', !on);
+}
+
+/* --- вхід --- */
+$('#login').addEventListener('click', doLogin);
+$('#pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+
+function doLogin() {
+  var p = $('#pass').value;
+  if (!p) { show('gateErr', 'Введіть пароль', true); return; }
+  $('#login').disabled = true;
+  show('gateErr', '', false);
+  fetch(API + '/admin-check', { headers: { 'X-Admin-Key': p } })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      $('#login').disabled = false;
+      if (!d.configured) {
+        show('gateErr', 'На сервері не заданий пароль (ADMIN_PASSWORD у Cloudflare).', true);
+        return;
+      }
+      if (!d.ok) { show('gateErr', 'Невірний пароль', true); return; }
+      KEY = p;
+      try { sessionStorage.setItem('admKey', p); } catch (e) {}
+      $('#gate').classList.add('hidden');
+      $('#panel').classList.remove('hidden');
+      loadSettings();
+    })
+    .catch(function () {
+      $('#login').disabled = false;
+      show('gateErr', 'Сервер не відповідає. Перевірте інтернет.', true);
+    });
+}
+
+/* --- перемикач --- */
+$('#showTransfer').addEventListener('click', function () { this.classList.toggle('on'); });
+
+/* --- завантаження --- */
+function loadSettings() {
+  show('info', 'Завантаження…', true);
+  fetch(API + '/settings')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      NUM.forEach(function (k) { if (d[k] !== undefined) $('#' + k).value = d[k]; });
+      TXT.forEach(function (k) { if (d[k] !== undefined) $('#' + k).value = d[k]; });
+      $('#showTransfer').classList.toggle('on', String(d.showTransfer) === '1' || d.showTransfer === true);
+      if (d._storage === false) {
+        show('info', 'Увага: сховище (KV) не підключене — зберегти зміни не вийде. ' +
+                     'Показані значення за замовчуванням.', true);
+        $('#info').className = 'msg err';
+      } else {
+        show('info', 'Значення завантажено з сервера.', true);
+        $('#info').className = 'msg inf';
+      }
+    })
+    .catch(function () {
+      show('info', 'Не вдалося завантажити налаштування.', true);
+      $('#info').className = 'msg err';
+    });
+}
+
+/* --- збереження --- */
+$('#save').addEventListener('click', function () {
+  var body = {};
+  var badField = '';
+  NUM.forEach(function (k) {
+    var v = $('#' + k).value;
+    if (v === '') { badField = badField || k; return; }
+    body[k] = parseFloat(v);
+  });
+  TXT.forEach(function (k) { body[k] = $('#' + k).value.trim(); });
+  body.showTransfer = $('#showTransfer').classList.contains('on') ? 1 : 0;
+
+  if (badField) {
+    show('okMsg', '', false);
+    show('errMsg', 'Заповніть усі числові поля — порожнім лишилось хоча б одне.', true);
+    return;
+  }
+
+  $('#save').disabled = true;
+  show('okMsg', '', false); show('errMsg', '', false);
+
+  fetch(API + '/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Key': KEY },
+    body: JSON.stringify(body)
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      $('#save').disabled = false;
+      if (d.ok) {
+        show('okMsg', 'Збережено. Зміни вже діють у калькуляторі.', true);
+        setTimeout(function () { show('okMsg', '', false); }, 4000);
+      } else {
+        show('errMsg', d.error || 'Не вдалося зберегти.', true);
+      }
+    })
+    .catch(function () {
+      $('#save').disabled = false;
+      show('errMsg', 'Сервер не відповідає. Спробуйте ще раз.', true);
+    });
+});
+
+$('#reload').addEventListener('click', function () {
+  show('okMsg', '', false); show('errMsg', '', false);
+  loadSettings();
+});
+
+/* автовхід у межах сесії браузера */
+(function () {
+  var k = '';
+  try { k = sessionStorage.getItem('admKey') || ''; } catch (e) {}
+  if (k) { $('#pass').value = k; doLogin(); }
+})();
+</script>
+</body>
+</html>

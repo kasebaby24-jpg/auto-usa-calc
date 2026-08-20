@@ -4,14 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#EDEFF2">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Авто з США — калькулятор</title>
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=10">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
 <header class="hero">
-  <div class="hero__badge">США · Аукціони · Під ключ</div>
+  <div class="hero__badge">США · Аукціони · Доставка</div>
   <h1 class="hero__title">Авто з США<span>калькулятор</span></h1>
   <div class="hero__sub">Введіть номер лота — решту порахуємо самі</div>
 </header>
@@ -102,16 +105,6 @@
       </div>
     </div>
 
-    <div class="field">
-      <label>Страхування</label>
-      <div class="seg" id="insurance">
-        <button data-v="0.9" class="on">0.9%<small>по фото з аукціону</small></button>
-        <button data-v="0.6">0.6%<small>по фото зі складу</small></button>
-        <button data-v="0">—<small>відсутнє</small></button>
-      </div>
-    </div>
-
-    <div class="res sm"><span>Вартість страхування</span><b id="rIns">$0</b></div>
     <div class="res"><span>Ціна доставки до порту</span><b id="rPort">$0</b></div>
   </section>
 
@@ -137,6 +130,7 @@
       <div class="field"><label>Експедиторські послуги, $</label><input type="number" inputmode="decimal" id="service" value="349"></div>
       <div class="field"><label>Комісія за обслуговування, $</label><input type="number" inputmode="decimal" id="serve" value="500"></div>
     </div>
+    <div class="res sm hidden" id="transferRow"><span>Комісія за переказ коштів</span><b id="rTransfer">$0</b></div>
   </section>
 
   <!-- 5. ПО УКРАЇНІ -->
@@ -147,7 +141,7 @@
       <div class="field"><label>Місто</label><button class="pick" data-pick="uacity"><span>Оберіть</span><i></i></button></div>
     </div>
     <div class="res"><span>Ціна комплексної доставки</span><b id="rUa">$0</b></div>
-    <div class="note">Включає адресну доставку, брокера, ПРР, стоянку в Клайпеді/Львові та страхування на всіх етапах. Доставка в адміністративних межах обраного міста.</div>
+    <div class="note">Включає адресну доставку, брокера, ПРР та стоянку в Клайпеді/Львові. Доставка в адміністративних межах обраного міста.</div>
   </section>
 
   <!-- 6. РЕМОНТ -->
@@ -214,7 +208,7 @@
   </div>
 </div>
 
-<script src="data.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="data.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

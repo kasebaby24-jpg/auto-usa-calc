@@ -292,3 +292,10 @@ input::placeholder{color:#A8B0BC;font-weight:500}
 .opt-empty{padding:26px;text-align:center;color:var(--muted);font-size:14px;font-weight:600}
 
 .hidden{display:none !important}
+
+/* поле, яке треба заповнити */
+.pick.need,input.need{
+  border-color:#FF8A5B !important;
+  background:#FFF2EC !important;
+  box-shadow:0 0 0 3px rgba(255,138,91,.16);
+}
