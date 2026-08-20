@@ -183,11 +183,11 @@ function baseService(body) {
 /* СПИСКИ ДЛЯ ВИБОРУ                                                   */
 /* ------------------------------------------------------------------ */
 var BODIES = [
-  { v: 'sedan',  n: 'Седан' },
+  { v: 'sedan',  n: 'Седан / купе / хетчбек' },
   { v: 'suv',    n: 'Кросовер / позашляховик' },
   { v: 'moto',   n: 'Мото' },
   { v: 'pickup', n: 'Пікап' },
-  { v: 'van',    n: 'VAN' }
+  { v: 'van',    n: 'VAN / мінівен' }
 ];
 var FUELS = [
   { v: 2, n: 'Бензин' },
@@ -517,6 +517,29 @@ function fallbackCopy(t) {
   document.body.removeChild(ta);
 }
 
+/* дзвінок: у Telegram WebView tel: інколи блокується — тоді копіюємо номер */
+var PHONE = '+380505155904';
+var callBtn = $('#callBtn');
+if (callBtn) {
+  callBtn.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    haptic('medium');
+    var left = false;
+    var onHide = function () { left = true; };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onHide);
+    try { window.location.href = 'tel:' + PHONE; } catch (e) {}
+    setTimeout(function () {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onHide);
+      if (!left && !document.hidden) {
+        fallbackCopy(PHONE);
+        toast('Телефон не відкрився з Telegram. Номер ' + PHONE + ' скопійовано — вставте в набирач.');
+      }
+    }, 1200);
+  });
+}
+
 /* посилання на телеграм всередині міні-аппи */
 $$('#tgBtn, #sBtn').forEach(function (a) {
   a.addEventListener('click', function (ev) {
@@ -557,13 +580,83 @@ var ST_NAMES = {
   alberta:'AB',ontario:'ON',quebec:'QC','nova scotia':'NS','new brunswick':'NB'
 };
 
+
+/* ------------------------------------------------------------------ */
+/* ВИЗНАЧЕННЯ ТИПУ КУЗОВА ЗА МОДЕЛЛЮ                                   */
+/* Аукціон тип кузова не віддає, тому визначаємо за назвою моделі.      */
+/* Седан, купе і хетчбек ідуть за одним тарифом — це не помилка.        */
+/* ------------------------------------------------------------------ */
+var BODY_WORDS = {
+  pickup: 'f 150|f 250|f 350|f 450|f150|f250|f350|f450|ranger|maverick|lightning|silverado|colorado|avalanche|s 10|sierra|canyon|ram 1500|ram 2500|ram 3500|ram 4500|dakota|tacoma|tundra|t100|frontier|titan|ridgeline|gladiator|santa cruz|cybertruck|r1t|sport trac|mark lt|ssr|hummer ev',
+  van:    'transit|transit connect|e 150|e 250|e 350|e 450|econoline|express 1500|express 2500|express 3500|express cargo|savana|promaster|promaster city|sprinter|metris|nv200|nv 200|nv1500|nv2500|nv3500|nv cargo|city express|astro|safari|ram cargo',
+  moto:   'harley|davidson|sportster|softail|dyna|road king|street glide|road glide|electra glide|fat boy|fatboy|night rod|v rod|ducati|panigale|multistrada|scrambler|ktm|duke|rc 390|exc|sx f|husqvarna|triumph|bonneville|speed triple|street triple|aprilia|rsv4|tuono|chieftain|moto guzzi|royal enfield|buell|victory motorcycle|ninja|zx 6r|zx 10r|zx 14|z900|z650|versys|vulcan|klx|klr|yzf|mt 07|mt 09|mt 03|fzr|v star|vmax|tenere|gsx r|gsxr|gsx s|hayabusa|katana|sv650|dr z|drz|rm z|cbr|crf|cb500|cb650|rebel|goldwing|gold wing|africa twin|grom|ruckus|vespa|piaggio|can am|spyder|ryker|sportsman|rzr|sea doo|seadoo|scooter|moped|motorcycle',
+  suv:    'sienna|odyssey|pacifica|voyager|town and country|town country|grand caravan|caravan|quest|carnival|sedona|uplander|montana|venture|freestar|windstar|aerostar|previa|villager|terraza|relay|mazda5|rav4|rav 4|cr v|crv|hr v|br v|pilot|passport|highlander|4runner|sequoia|land cruiser|venza|corolla cross|explorer|escape|edge|expedition|bronco|ecosport|flex|mach e|escalade|tahoe|suburban|traverse|equinox|blazer|trailblazer|trax|captiva|yukon|acadia|terrain|envoy|durango|journey|nitro|grand cherokee|cherokee|wrangler|compass|patriot|renegade|commander|wagoneer|rogue|murano|pathfinder|armada|kicks|juke|xterra|ariya|qx50|qx55|qx60|qx70|qx80|santa fe|tucson|palisade|kona|venue|ioniq 5|nexo|sorento|sportage|telluride|seltos|soul|niro|ev6|ev9|outback|forester|ascent|crosstrek|tribeca|cx 3|cx 30|cx 5|cx 50|cx 7|cx 9|cx 90|tribute|model y|model x|x1|x2|x3|x4|x5|x6|x7|q3|q5|q7|q8|e tron|gla|glb|glc|gle|gls|glk|ml 350|gl 450|g class|tiguan|atlas|touareg|taos|id 4|id4|rx 350|rx 450|nx 200|nx 300|gx 460|gx 470|lx 470|lx 570|ux 200|rdx|mdx|zdx|xc40|xc60|xc70|xc90|range rover|discovery|evoque|velar|defender|freelander|lr2|lr3|lr4|cayenne|macan|levante|stelvio|urus|bentayga|dbx|cullinan|eclipse cross|outlander|montero|endeavor|rodeo|trooper|ascender|aviator|navigator|nautilus|corsair|mkx|mkc|mkt|xt4|xt5|xt6|srx|encore|enclave|envision|rendezvous|grand vitara|vitara|xl7|veracruz|borrego|sorento|edge|escape',
+  sedan:  'corolla|camry|avalon|prius|yaris|echo|matrix|celica|supra|mr2|civic|accord|insight|integra|tsx|tlx|ilx|rsx|legend|altima|sentra|maxima|versa|leaf|370z|350z|gt r|elantra|sonata|accent|veloster|genesis|azera|ioniq|g70|g80|g90|forte|optima|k5|rio|stinger|cadenza|amanti|spectra|malibu|impala|cruze|sonic|spark|camaro|corvette|cobalt|aveo|monte carlo|fusion|focus|taurus|mustang|fiesta|contour|charger|challenger|dart|avenger|neon|chrysler 200|chrysler 300|sebring|pt cruiser|jetta|passat|golf|gti|arteon|beetle|3 series|5 series|7 series|320i|328i|330i|335i|340i|428i|430i|435i|528i|530i|535i|540i|550i|740i|750i|i3|i4|i8|c class|e class|s class|cla|cls|c300|e350|s550|a3|a4|a5|a6|a7|a8|model 3|model s|mazda3|mazda6|mazda 3|mazda 6|miata|mx 5|rx 8|impreza|legacy|wrx|sti|brz|is 250|is 300|is 350|es 300|es 350|gs 350|ls 460|mirage|lancer|eclipse|galant|q50|q60|q70|g35|g37|m35|m37'
+};
+
+function detectBody(l) {
+  var t = ((l.title || '') + ' ' + (l.model || '') + ' ' + (l.brand || '') + ' ' + (l.body_type || '')).toLowerCase();
+  t = ' ' + t.replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+
+  /* прямі слова в описі */
+  if (/ (pickup|crew cab|quad cab|super cab|extended cab) /.test(t)) return 'pickup';
+  if (/ (cargo van|panel van) /.test(t))                              return 'van';
+  if (/ (minivan|passenger van) /.test(t))                            return 'suv';
+  if (/ (motorcycle|scooter|moped|atv|utv) /.test(t))                return 'moto';
+  if (/ (suv|crossover|sport utility) /.test(t))                     return 'suv';
+  if (/ (sedan|coupe|hatchback|convertible|wagon|liftback) /.test(t))  return 'sedan';
+
+  /* за назвою моделі — порядок важливий */
+  var order = ['moto', 'pickup', 'van', 'suv', 'sedan'], i, j, w;
+  for (i = 0; i < order.length; i++) {
+    w = BODY_WORDS[order[i]].split('|');
+    for (j = 0; j < w.length; j++) {
+      if (t.indexOf(' ' + w[j] + ' ') > -1) return order[i];
+    }
+  }
+  return '';
+}
+
+/* ------------------------------------------------------------------ */
+/* ЛОТИ, ЯКІ НЕ МОЖНА ВВЕЗТИ                                           */
+/* ------------------------------------------------------------------ */
+var BAD_ANY = ['NO VIN PLATE', 'CERT OF DESTRUCT', 'REASIGNED VIN', 'VIN REPLACEMENT',
+               'STOLEN', 'THEFT', 'MISSING/ALTERED VIN', 'NOT FOR EXPORT', 'AOC ATTACHED'];
+var BAD_ELECTRIC = ['WATER', 'FLOOD', 'STORM DAMAGE', 'BURN'];
+
+function lotWarning(l) {
+  var txt = [l.damage_description, l.secondary_damage, l.sale_title_type]
+              .filter(Boolean).join(' | ').toUpperCase();
+  var fuel = +l.fuel;
+  var i;
+  for (i = 0; i < BAD_ANY.length; i++) {
+    if (txt.indexOf(BAD_ANY[i]) > -1) {
+      return 'Такий лот не приймається до відправки: ' + BAD_ANY[i].toLowerCase() +
+             '. Уточніть у менеджера перед ставкою.';
+    }
+  }
+  if (fuel === 1) {
+    for (i = 0; i < BAD_ELECTRIC.length; i++) {
+      if (txt.indexOf(BAD_ELECTRIC[i]) > -1) {
+        return 'Електромобілі після води/пожежі не приймаються до перевезення. Уточніть у менеджера.';
+      }
+    }
+  }
+  var st = (l.location_state || '').toUpperCase();
+  if ((fuel === 1 || fuel === 4) && (st === 'HI' || /HAWAII/i.test(l.location_state_name || ''))) {
+    return 'Електро та гібриди з Гаваїв не відправляються.';
+  }
+  return '';
+}
+
 var lotPhotos = [], lotIdx = 0, lotData = null;
 
-function lotStatus(txt, isErr) {
+function lotStatus(txt, isErr, isOk) {
   var el = $('#lotStatus');
   el.textContent = txt || '';
   el.classList.toggle('hidden', !txt);
   el.classList.toggle('err', !!isErr);
+  el.classList.toggle('ok', !!isOk);
 }
 
 function findStateId(l) {
@@ -665,6 +758,10 @@ function renderLot(l) {
   var dmg = [l.damage_description, l.secondary_damage].filter(Boolean).join(' · ');
   $('#lotDmg').textContent = dmg ? 'Пошкодження: ' + dmg : '';
   $('#lotDmg').classList.toggle('hidden', !dmg);
+
+  var warn = lotWarning(l);
+  $('#lotWarn').textContent = warn;
+  $('#lotWarn').classList.toggle('hidden', !warn);
 }
 
 function showPhoto(i) {
@@ -679,27 +776,50 @@ function showPhoto(i) {
   $('#lotNext').classList.toggle('hidden', !multi);
 }
 
-function searchLot() {
-  var q = $('#lotQuery').value.trim();
-  if (!q) { lotStatus('Введіть номер лота або VIN', true); return; }
+/* Витягує номер лота або VIN з будь-якого тексту:
+   "lot # 45678912", посилання на Copart/IAAI, VIN з пробілами тощо. */
+function cleanQuery(v) {
+  var t = String(v || '').toUpperCase();
+  var vin = t.replace(/[^A-Z0-9]/g, '').match(/[A-HJ-NPR-Z0-9]{17}/);
+  if (vin && /[A-Z]/.test(vin[0])) return vin[0];
+  var nums = t.match(/\d{6,10}/g);
+  if (nums) {
+    nums.sort(function (a, b) { return b.length - a.length; });
+    return nums[0];
+  }
+  return t.replace(/[^A-Z0-9]/g, '');
+}
+
+var lotTimer = null, lastQuery = '', lotBusy = false;
+
+function searchLot(auto) {
+  var q = cleanQuery($('#lotQuery').value);
+  if (!q) { if (!auto) lotStatus('Введіть номер лота або VIN', true); return; }
+  if (q.length < 6) { if (!auto) lotStatus('Замало символів — перевірте номер', true); return; }
+  if (lotBusy) return;
+
+  lotBusy = true; lastQuery = q;
   $('#lotGo').disabled = true;
-  lotStatus('Шукаємо лот…');
+  $('#lotStatus').classList.remove('hidden', 'err', 'ok');
+  $('#lotStatus').innerHTML = '<i class="lot-spin"></i>Шукаємо лот…';
   $('#lotRes').classList.add('hidden');
 
   fetch(LOT_API + (LOT_API.indexOf('?') > -1 ? '&' : '?') + 'value=' + encodeURIComponent(q))
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      $('#lotGo').disabled = false;
+      lotBusy = false; $('#lotGo').disabled = false;
       if (!d || d.status !== 'success' || !d.lot) {
-        lotStatus('Лот не знайдено. Перевірте номер або спробуйте VIN.', true);
+        lotStatus(q.length === 17
+          ? 'За цим VIN лот не знайдено. Спробуйте номер лота.'
+          : 'Лот не знайдено. Перевірте номер або введіть VIN.', true);
         return;
       }
-      lotStatus('');
       renderLot(d.lot);
+      applyLot();          /* одразу підставляємо в калькулятор */
       haptic('medium');
     })
     .catch(function () {
-      $('#lotGo').disabled = false;
+      lotBusy = false; $('#lotGo').disabled = false;
       lotStatus('Не вдалося зв\'язатися з сервером. Спробуйте ще раз.', true);
     });
 }
@@ -711,35 +831,80 @@ function applyLot() {
   if (+l.year) S.year = +l.year;
   if (+l.buy_now_price > 0) { S.lotPrice = parseInt(l.buy_now_price, 10); $('#lotPrice').value = S.lotPrice; }
   if (+l.fuel >= 1 && +l.fuel <= 4) S.fuel = +l.fuel;
-  if (!S.body) S.body = 'sedan';
+
+  /* тип кузова визначаємо за моделлю; якщо не впевнені — лишаємо порожнім */
+  var body = detectBody(l), autoBody = false;
+  if (body) { S.body = body; autoBody = true; }
 
   var cc = parseInt(l.engine, 10);
   if (S.fuel !== 1 && cc > 0 && cc <= 10000) S.engine = nearestEngine(cc);
+  if (S.body === 'moto' && cc > 0 && cc <= 2000) S.moto = nearestMoto(cc);
 
   var st = findStateId(l);
   if (st) { S.stateId = st; S.cityId = findCityId(st, l); }
 
+  S.service = baseService(S.body);
+  $('#service').value = S.service;
+
   save(); update();
-  haptic('medium');
 
+  /* що лишилось заповнити вручну */
   var miss = [];
+  if (!S.body)     miss.push('тип кузова');
   if (!S.lotPrice) miss.push('ціну лоту');
-  if (!S.cityId)   miss.push('місто аукціону');
   if (!S.fuel)     miss.push('тип палива');
-  if (S.fuel !== 1 && !S.engine) miss.push("об'єм двигуна");
-  lotStatus(miss.length ? 'Підставлено. Вкажіть вручну: ' + miss.join(', ') + '.'
-                        : 'Дані підставлено в калькулятор.');
+  if (S.body !== 'moto' && S.fuel !== 1 && !S.engine) miss.push("об'єм двигуна");
+  if (S.body === 'moto' && !S.moto) miss.push("об'єм двигуна");
+  if (!S.stateId || !S.cityId) miss.push('штат і місто');
 
-  $('#lotPrice').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  var bodyTxt = autoBody
+    ? ' Кузов визначено як «' + (BODIES.filter(function (b) { return b.v === S.body; })[0] || {}).n + '» — перевірте.'
+    : '';
+
+  if (miss.length) {
+    lotStatus('Заповніть вручну: ' + miss.join(', ') + '.' + bodyTxt);
+  } else {
+    lotStatus('Готово — розрахунок нижче.' + bodyTxt, false, true);
+  }
+
+  haptic('light');
+}
+
+function nearestMoto(cc) {
+  var best = 0, diff = 1e9;
+  D.motoEngines.forEach(function (e) {
+    var d = Math.abs(e - cc);
+    if (d < diff) { diff = d; best = e; }
+  });
+  return best;
 }
 
 if (LOT_API) {
-  $('#lotGo').addEventListener('click', searchLot);
-  $('#lotQuery').addEventListener('keydown', function (e) { if (e.key === 'Enter') searchLot(); });
+  $('#lotGo').addEventListener('click', function () { searchLot(false); });
   $('#lotApply').addEventListener('click', applyLot);
   $('#lotPrev').addEventListener('click', function () { showPhoto(lotIdx - 1); });
   $('#lotNext').addEventListener('click', function () { showPhoto(lotIdx + 1); });
   $('#lotImg').addEventListener('error', function () { $('#lotPhoto').classList.add('hidden'); });
+
+  /* автопошук: щойно ввели/вставили достатньо символів */
+  $('#lotQuery').addEventListener('input', function () {
+    var q = cleanQuery(this.value);
+    clearTimeout(lotTimer);
+    if (q.length >= 6 && q !== lastQuery) {
+      lotTimer = setTimeout(function () { searchLot(true); }, 550);
+    }
+  });
+  $('#lotQuery').addEventListener('paste', function () {
+    var el = this;
+    setTimeout(function () {
+      var q = cleanQuery(el.value);
+      clearTimeout(lotTimer);
+      if (q.length >= 6) searchLot(true);
+    }, 30);
+  });
+  $('#lotQuery').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); this.blur(); clearTimeout(lotTimer); searchLot(false); }
+  });
 } else {
   $('.lot-card').classList.add('hidden');
 }
@@ -769,5 +934,5 @@ if (LOT_API) {
 update();
 
 /* debug-хуки (не впливають на роботу) */
-window.__S = S; window.__calc = calc; window.__update = update;
+window.__S = S; window.__calc = calc; window.__update = update; window.__detectBody = detectBody; window.__lotWarning = lotWarning;
 })();

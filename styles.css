@@ -108,6 +108,17 @@ input,button,select{font-family:inherit}
   margin-top:10px;padding:10px 13px;border-radius:13px;font-size:12.5px;font-weight:600;
   background:rgba(255,107,74,.14);color:#FFB09B;
 }
+.lot-warn{
+  margin-top:10px;padding:12px 14px;border-radius:13px;font-size:12.5px;font-weight:700;line-height:1.5;
+  background:rgba(255,60,40,.18);color:#FFC2B4;border:1px solid rgba(255,90,70,.45);
+}
+.lot-spin{
+  display:inline-block;width:13px;height:13px;margin-right:7px;vertical-align:-2px;
+  border:2px solid rgba(255,255,255,.25);border-top-color:var(--lime);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lot-status.ok{color:var(--lime)}
 .lot-apply{
   width:100%;margin-top:14px;padding:15px;border-radius:16px;border:0;cursor:pointer;
   background:var(--lime);color:#0E1116;font-weight:800;font-size:15px;
