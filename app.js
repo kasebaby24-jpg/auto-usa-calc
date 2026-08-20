@@ -465,10 +465,20 @@ function update() {
   $('#lotPrice').classList.toggle('need', need.lotPrice);
   $('#battery').classList.toggle('need', need.battery);
 
-  /* нижня панель показує ту саму суму, що й картка підсумку */
+  /* Поки про авто не відомо нічого — не показуємо суму нізвідки.
+     Щойно лот знайдено або введено ставку — рахуємо все, що відомо. */
+  var known = !!(lotData || S.lotPrice || S.stateId || S.body);
   var sb = $('#sTotal');
-  sb.textContent = money(r.total);
-  sb.style.fontSize = '';
+  if (known) {
+    sb.textContent = money(r.total);
+    sb.style.fontSize = '';
+  } else {
+    sb.textContent = 'Введіть номер лота';
+    sb.style.fontSize = '15px';
+    $('#rTotal').textContent = '—';
+    $('#rTotalUah').textContent = '';
+    $('#breakdown').innerHTML = '<div><span>Заповніть поля вище</span><b>—</b></div>';
+  }
 
   window._last = r;
 }
@@ -482,10 +492,18 @@ function toast(msg) {
 /* ЗБЕРЕЖЕННЯ                                                          */
 /* ------------------------------------------------------------------ */
 function save() { try { localStorage.setItem('usaCalc', JSON.stringify(S)); } catch (e) {} }
+/* З минулого сеансу повертаємо ЛИШЕ вибір покупця — місто доставки.
+   Дані авто (ціна, кузов, штат, рік, двигун) не відновлюємо: інакше при
+   відкритті додатку висіла сума від машини, яку дивились учора,
+   хоча поле пошуку порожнє. */
+var KEEP_ON_RELOAD = ['regionId', 'uaCityId'];
+
 function load() {
   try {
     var v = JSON.parse(localStorage.getItem('usaCalc'));
-    if (v && typeof v === 'object') { Object.keys(S).forEach(function (k) { if (v[k] !== undefined) S[k] = v[k]; }); }
+    if (v && typeof v === 'object') {
+      KEEP_ON_RELOAD.forEach(function (k) { if (v[k] !== undefined) S[k] = v[k]; });
+    }
   } catch (e) {}
 }
 
