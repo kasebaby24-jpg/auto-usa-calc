@@ -382,8 +382,6 @@ function update() {
   var r = calc();
   var isBig = (S.body === 'pickup' || S.body === 'van');
 
-  /* поки не введено ціну лоту — не показуємо базові послуги в підсумку */
-  if (!S.lotPrice) { r.service = 0; r.serve = 0; r.transfer = 0; r.total = 0; }
 
   /* кнопки-пікери */
   $$('.pick').forEach(function (b) {
@@ -467,15 +465,10 @@ function update() {
   $('#lotPrice').classList.toggle('need', need.lotPrice);
   $('#battery').classList.toggle('need', need.battery);
 
-  /* нижня панель: не показуємо $0 без пояснення */
+  /* нижня панель показує ту саму суму, що й картка підсумку */
   var sb = $('#sTotal');
-  if (!S.lotPrice) {
-    sb.textContent = 'Вкажіть ціну лоту';
-    sb.style.fontSize = '15px';
-  } else {
-    sb.textContent = money(r.total);
-    sb.style.fontSize = '';
-  }
+  sb.textContent = money(r.total);
+  sb.style.fontSize = '';
 
   window._last = r;
 }
