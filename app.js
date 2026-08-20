@@ -15,8 +15,8 @@ var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : nu
 if (tg) {
   try {
     tg.ready(); tg.expand();
-    if (tg.setHeaderColor) tg.setHeaderColor('#05070f');
-    if (tg.setBackgroundColor) tg.setBackgroundColor('#05070f');
+    if (tg.setHeaderColor) tg.setHeaderColor('#EDEFF2');
+    if (tg.setBackgroundColor) tg.setBackgroundColor('#EDEFF2');
     if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
   } catch (e) {}
 }
@@ -532,6 +532,217 @@ window.addEventListener('scroll', function () {
   $('#sticky').classList.toggle('hide', atBottom);
   lastY = y;
 }, { passive: true });
+
+
+/* ==================================================================
+   ПОШУК ЛОТА — дані тягнуться з аукціону автоматично
+   ------------------------------------------------------------------
+   LOT_API — адреса твого проксі (Cloudflare Worker).
+   Поки порожньо — блок пошуку прихований і додаток працює як звичайний
+   калькулятор. Встав адресу — блок з'явиться сам.
+   ================================================================== */
+var LOT_API = '';
+
+var ST_NAMES = {
+  alabama:'AL',alaska:'AK',arizona:'AZ',arkansas:'AR',california:'CA',colorado:'CO',
+  connecticut:'CT',delaware:'DE',florida:'FL',georgia:'GA',hawaii:'HI',idaho:'ID',
+  illinois:'IL',indiana:'IN',iowa:'IA',kansas:'KS',kentucky:'KY',louisiana:'LA',
+  maine:'ME',maryland:'MD',massachusetts:'MA',michigan:'MI',minnesota:'MN',
+  mississippi:'MS',missouri:'MO',montana:'MT',nebraska:'NE',nevada:'NV',
+  'new hampshire':'NH','new jersey':'NJ','new mexico':'NM','new york':'NY',
+  'north carolina':'NC','north dakota':'ND',ohio:'OH',oklahoma:'OK',oregon:'OR',
+  pennsylvania:'PA','rhode island':'RI','south carolina':'SC','south dakota':'SD',
+  tennessee:'TN',texas:'TX',utah:'UT',vermont:'VT',virginia:'VA',washington:'WA',
+  'west virginia':'WV',wisconsin:'WI',wyoming:'WY','district of columbia':'DC',
+  alberta:'AB',ontario:'ON',quebec:'QC','nova scotia':'NS','new brunswick':'NB'
+};
+
+var lotPhotos = [], lotIdx = 0, lotData = null;
+
+function lotStatus(txt, isErr) {
+  var el = $('#lotStatus');
+  el.textContent = txt || '';
+  el.classList.toggle('hidden', !txt);
+  el.classList.toggle('err', !!isErr);
+}
+
+function findStateId(l) {
+  var cand = [];
+  if (l.location_state)      cand.push(String(l.location_state).trim().toLowerCase());
+  if (l.location_state_name) cand.push(String(l.location_state_name).trim().toLowerCase());
+  var i, k, m;
+  /* 1 — точний збіг з кодом штату */
+  for (i = 0; i < cand.length; i++) {
+    var up = cand[i].toUpperCase();
+    m = D.states.filter(function (o) {
+      var n = o.n.toUpperCase();
+      return n === up || n.replace(' - CANADA', '') === up;
+    })[0];
+    if (m) return m.id;
+  }
+  /* 2 — повна назва -> код */
+  for (i = 0; i < cand.length; i++) {
+    var code = ST_NAMES[cand[i]];
+    if (code) {
+      m = D.states.filter(function (o) { return o.n.toUpperCase().replace(' - CANADA', '') === code; })[0];
+      if (m) return m.id;
+    }
+  }
+  /* 3 — обрізана назва ("quebe", "ontar") */
+  for (i = 0; i < cand.length; i++) {
+    if (cand[i].length < 4) continue;
+    for (k in ST_NAMES) {
+      if (k.indexOf(cand[i]) === 0) {
+        m = D.states.filter(function (o) { return o.n.toUpperCase().replace(' - CANADA', '') === ST_NAMES[k]; })[0];
+        if (m) return m.id;
+      }
+    }
+  }
+  return 0;
+}
+
+function findCityId(stId, l) {
+  var names = [];
+  ['location_city', 'location_branch_name', 'location'].forEach(function (f) {
+    if (l[f]) names.push(String(l[f]).trim().toLowerCase());
+  });
+  var pool = D.cities.filter(function (c) {
+    return c.s === stId && platformFlag(c, S.platform) === 1;
+  });
+  var i, j;
+  for (i = 0; i < names.length; i++) {
+    for (j = 0; j < pool.length; j++) if (pool[j].n.toLowerCase() === names[i]) return pool[j].id;
+  }
+  for (i = 0; i < names.length; i++) {
+    for (j = 0; j < pool.length; j++) {
+      var n = pool[j].n.toLowerCase();
+      if (n.indexOf(names[i]) === 0 || names[i].indexOf(n) === 0) return pool[j].id;
+    }
+  }
+  return pool.length === 1 ? pool[0].id : 0;
+}
+
+function nearestEngine(cc) {
+  var best = 0, diff = 1e9;
+  D.engines.forEach(function (e) {
+    var d = Math.abs(e - cc);
+    if (d < diff) { diff = d; best = e; }
+  });
+  return best;
+}
+
+function renderLot(l) {
+  lotData = l;
+  lotPhotos = (l.images || []).map(function (x) { return x.image_url; }).filter(Boolean);
+  if (!lotPhotos.length && l.img) lotPhotos = [l.img];
+  lotIdx = 0;
+
+  $('#lotRes').classList.remove('hidden');
+  $('#lotPhoto').classList.toggle('hidden', !lotPhotos.length);
+  if (lotPhotos.length) showPhoto(0);
+
+  var auc = (D.platforms.filter(function (p) { return p.id == +l.auction; })[0] || {}).n || '';
+  $('#lotAuc').textContent = auc;
+  $('#lotAuc').classList.toggle('hidden', !auc);
+
+  $('#lotTitle').textContent = l.title || ((l.year || '') + ' ' + (l.brand || '') + ' ' + (l.model || '')).trim() || 'Лот ' + (l.lot_number || '');
+  $('#lotVin').textContent = l.vin ? 'VIN ' + l.vin : '';
+
+  var sp = [];
+  if (l.year)        sp.push(['Рік', l.year]);
+  if (+l.engine > 0) sp.push(['Двигун', (l.engine / 1000).toFixed(1) + ' л']);
+  else if (l.engine) sp.push(['Двигун', String(l.engine).slice(0, 22)]);
+  if (l.odometer)    sp.push(['Пробіг', (+l.odometer).toLocaleString('uk-UA') + ' mi']);
+  var fn = { 1: 'Електро', 2: 'Бензин', 3: 'Дизель', 4: 'Гібрид' }[+l.fuel];
+  if (fn)                     sp.push(['Паливо', fn]);
+  if (l.location_branch_name) sp.push(['Локація', l.location_branch_name]);
+  if (l.sale_title_type)      sp.push(['Title', l.sale_title_type]);
+  if (+l.buy_now_price > 0)   sp.push(['Buy Now', '$' + (+l.buy_now_price).toLocaleString('uk-UA')]);
+  $('#lotSpecs').innerHTML = sp.map(function (x) {
+    return '<span>' + esc(x[0]) + ' <b>' + esc(x[1]) + '</b></span>';
+  }).join('');
+
+  var dmg = [l.damage_description, l.secondary_damage].filter(Boolean).join(' · ');
+  $('#lotDmg').textContent = dmg ? 'Пошкодження: ' + dmg : '';
+  $('#lotDmg').classList.toggle('hidden', !dmg);
+}
+
+function showPhoto(i) {
+  if (!lotPhotos.length) return;
+  lotIdx = (i + lotPhotos.length) % lotPhotos.length;
+  $('#lotImg').src = lotPhotos[lotIdx];
+  $('#lotDots').innerHTML = lotPhotos.slice(0, 12).map(function (_, k) {
+    return '<i class="' + (k === lotIdx ? 'on' : '') + '"></i>';
+  }).join('');
+  var multi = lotPhotos.length > 1;
+  $('#lotPrev').classList.toggle('hidden', !multi);
+  $('#lotNext').classList.toggle('hidden', !multi);
+}
+
+function searchLot() {
+  var q = $('#lotQuery').value.trim();
+  if (!q) { lotStatus('Введіть номер лота або VIN', true); return; }
+  $('#lotGo').disabled = true;
+  lotStatus('Шукаємо лот…');
+  $('#lotRes').classList.add('hidden');
+
+  fetch(LOT_API + (LOT_API.indexOf('?') > -1 ? '&' : '?') + 'value=' + encodeURIComponent(q))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      $('#lotGo').disabled = false;
+      if (!d || d.status !== 'success' || !d.lot) {
+        lotStatus('Лот не знайдено. Перевірте номер або спробуйте VIN.', true);
+        return;
+      }
+      lotStatus('');
+      renderLot(d.lot);
+      haptic('medium');
+    })
+    .catch(function () {
+      $('#lotGo').disabled = false;
+      lotStatus('Не вдалося зв\'язатися з сервером. Спробуйте ще раз.', true);
+    });
+}
+
+function applyLot() {
+  var l = lotData; if (!l) return;
+
+  if (+l.auction && D.platforms.filter(function (p) { return p.id == +l.auction; }).length) S.platform = +l.auction;
+  if (+l.year) S.year = +l.year;
+  if (+l.buy_now_price > 0) { S.lotPrice = parseInt(l.buy_now_price, 10); $('#lotPrice').value = S.lotPrice; }
+  if (+l.fuel >= 1 && +l.fuel <= 4) S.fuel = +l.fuel;
+  if (!S.body) S.body = 'sedan';
+
+  var cc = parseInt(l.engine, 10);
+  if (S.fuel !== 1 && cc > 0 && cc <= 10000) S.engine = nearestEngine(cc);
+
+  var st = findStateId(l);
+  if (st) { S.stateId = st; S.cityId = findCityId(st, l); }
+
+  save(); update();
+  haptic('medium');
+
+  var miss = [];
+  if (!S.lotPrice) miss.push('ціну лоту');
+  if (!S.cityId)   miss.push('місто аукціону');
+  if (!S.fuel)     miss.push('тип палива');
+  if (S.fuel !== 1 && !S.engine) miss.push("об'єм двигуна");
+  lotStatus(miss.length ? 'Підставлено. Вкажіть вручну: ' + miss.join(', ') + '.'
+                        : 'Дані підставлено в калькулятор.');
+
+  $('#lotPrice').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+if (LOT_API) {
+  $('#lotGo').addEventListener('click', searchLot);
+  $('#lotQuery').addEventListener('keydown', function (e) { if (e.key === 'Enter') searchLot(); });
+  $('#lotApply').addEventListener('click', applyLot);
+  $('#lotPrev').addEventListener('click', function () { showPhoto(lotIdx - 1); });
+  $('#lotNext').addEventListener('click', function () { showPhoto(lotIdx + 1); });
+  $('#lotImg').addEventListener('error', function () { $('#lotPhoto').classList.add('hidden'); });
+} else {
+  $('.lot-card').classList.add('hidden');
+}
 
 /* ------------------------------------------------------------------ */
 /* КУРС НБУ — підтягуємо актуальний (як на сайті-оригіналі)            */

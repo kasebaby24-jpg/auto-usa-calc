@@ -3,30 +3,51 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#05070f">
+<meta name="theme-color" content="#EDEFF2">
 <title>Авто з США — калькулятор</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=2">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
-<div class="bg">
-  <span class="orb orb1"></span>
-  <span class="orb orb2"></span>
-  <span class="orb orb3"></span>
-  <span class="grain"></span>
-</div>
-
 <header class="hero">
   <div class="hero__badge">США · Аукціони · Під ключ</div>
-  <h1 class="hero__title">Авто з США</h1>
-  <div class="hero__sub">Калькулятор вартості під ключ</div>
+  <h1 class="hero__title">Авто з США<span>калькулятор</span></h1>
+  <div class="hero__sub">Введіть номер лота — решту порахуємо самі</div>
 </header>
 
 <main class="wrap">
 
+  <!-- 0. ПОШУК ЛОТА -->
+  <section class="card lot-card">
+    <div class="card__head"><span class="ico">🔎</span><h2>Пошук лота</h2></div>
+    <div class="lot-hint">Введіть номер лота Copart / IAAI або VIN — підтягнемо фото, рік, двигун, локацію та пошкодження, і підставимо все в калькулятор.</div>
+    <div class="lot-row">
+      <input type="text" id="lotQuery" placeholder="Номер лота або VIN" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="lot-go" id="lotGo">Знайти</button>
+    </div>
+    <div class="lot-status hidden" id="lotStatus"></div>
+
+    <div class="lot-res hidden" id="lotRes">
+      <div class="lot-photo hidden" id="lotPhoto">
+        <img id="lotImg" alt="">
+        <span class="auc" id="lotAuc"></span>
+        <button class="pv" id="lotPrev">‹</button>
+        <button class="nx" id="lotNext">›</button>
+        <nav id="lotDots"></nav>
+      </div>
+      <div class="lot-body">
+        <div class="lot-title" id="lotTitle"></div>
+        <div class="lot-vin" id="lotVin"></div>
+        <div class="lot-specs" id="lotSpecs"></div>
+        <div class="lot-dmg hidden" id="lotDmg"></div>
+        <button class="lot-apply" id="lotApply">Підставити в калькулятор</button>
+      </div>
+    </div>
+  </section>
+
   <!-- 1. ЛОТ -->
-  <section class="glass card">
+  <section class="card">
     <div class="card__head"><span class="ico">🏷️</span><h2>Розрахунок лоту</h2></div>
 
     <div class="chips" id="platforms"></div>
@@ -48,7 +69,7 @@
   </section>
 
   <!-- 2. ДО ПОРТУ -->
-  <section class="glass card">
+  <section class="card">
     <div class="card__head"><span class="ico">🚢</span><h2>Доставка до порту</h2></div>
 
     <div class="grid2">
@@ -94,7 +115,7 @@
   </section>
 
   <!-- 3. МИТНІ -->
-  <section class="glass card" id="customsCard">
+  <section class="card" id="customsCard">
     <div class="card__head"><span class="ico">🧾</span><h2>Митні платежі</h2></div>
 
     <div class="grid2">
@@ -109,7 +130,7 @@
   </section>
 
   <!-- 4. ПОСЛУГИ -->
-  <section class="glass card">
+  <section class="card">
     <div class="card__head"><span class="ico">🤝</span><h2>Послуги</h2></div>
     <div class="grid2">
       <div class="field"><label>Експедиторські послуги, $</label><input type="number" inputmode="decimal" id="service" value="349"></div>
@@ -118,7 +139,7 @@
   </section>
 
   <!-- 5. ПО УКРАЇНІ -->
-  <section class="glass card" id="uaCard">
+  <section class="card" id="uaCard">
     <div class="card__head"><span class="ico">📍</span><h2>Адресна доставка по Україні</h2></div>
     <div class="grid2">
       <div class="field"><label>Область</label><button class="pick" data-pick="region"><span>Оберіть</span><i></i></button></div>
@@ -129,7 +150,7 @@
   </section>
 
   <!-- 6. РЕМОНТ -->
-  <section class="glass card">
+  <section class="card">
     <button class="addrepair" id="repairToggle"><i>+</i> Додати приблизну вартість ремонту</button>
     <div class="field hidden" id="repairBox" style="margin-top:14px">
       <label>Вартість ремонту, $</label>
@@ -171,7 +192,7 @@
   <footer class="foot"><div id="rates">Курс НБУ: $1 = 44.70 ₴ · €1 = 51.87 ₴</div><div style="margin-top:4px">Розрахунок є попереднім і не є публічною офертою</div></footer>
 </main>
 
-<div class="sticky glass" id="sticky">
+<div class="sticky" id="sticky">
   <div class="sticky__l"><span>Повна вартість</span><b id="sTotal">$0</b></div>
   <a class="sticky__b" href="https://t.me/evvgenij" target="_blank" rel="noopener" id="sBtn">Замовити</a>
 </div>
@@ -179,7 +200,7 @@
 <!-- PICKER -->
 <div class="sheet-wrap hidden" id="sheet">
   <div class="sheet-bg"></div>
-  <div class="sheet glass">
+  <div class="sheet">
     <div class="sheet__grip"></div>
     <div class="sheet__head">
       <h3 id="sheetTitle">Оберіть</h3>
@@ -192,7 +213,7 @@
   </div>
 </div>
 
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
