@@ -1106,6 +1106,12 @@ function applyLot() {
   S.engine = 0; S.moto = 0; S.battery = 0;
   S.stateId = 0; S.cityId = 0;
   S.sublot = 0; S.title = 0;
+  /* ремонт теж стосується конкретного авто — для нового лота він недійсний */
+  S.repairOn = false; S.repair = 0;
+  var rt = $('#repairToggle');
+  if (rt) { rt.classList.remove('on'); rt.innerHTML = '<i>+</i> Додати приблизну вартість ремонту'; }
+  if ($('#repairBox')) $('#repairBox').classList.add('hidden');
+  if ($('#repair')) $('#repair').value = '';
   $('#lotPrice').value = '';
   $('#battery').value = '';
   $('#sublotFee').value = '';
