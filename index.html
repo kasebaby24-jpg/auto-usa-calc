@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#05070f">
+<title>Авто з США — калькулятор</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<div class="bg">
+  <span class="orb orb1"></span>
+  <span class="orb orb2"></span>
+  <span class="orb orb3"></span>
+  <span class="grain"></span>
+</div>
+
+<header class="hero">
+  <div class="hero__badge">США · Аукціони · Під ключ</div>
+  <h1 class="hero__title">Авто з США</h1>
+  <div class="hero__sub">Калькулятор вартості під ключ</div>
+</header>
+
+<main class="wrap">
+
+  <!-- 1. ЛОТ -->
+  <section class="glass card">
+    <div class="card__head"><span class="ico">🏷️</span><h2>Розрахунок лоту</h2></div>
+
+    <div class="chips" id="platforms"></div>
+
+    <div class="field">
+      <label>Ціна лоту, $</label>
+      <input type="number" inputmode="decimal" id="lotPrice" placeholder="Наприклад 12000">
+    </div>
+
+    <div class="field hidden" id="auctionFeeBox">
+      <label>Збір аукціону, $</label>
+      <input type="number" inputmode="decimal" id="auctionFee" placeholder="Введіть збір аукціону">
+    </div>
+
+    <div class="res">
+      <span>Ціна лоту зі зборами</span>
+      <b id="rLot">$0</b>
+    </div>
+  </section>
+
+  <!-- 2. ДО ПОРТУ -->
+  <section class="glass card">
+    <div class="card__head"><span class="ico">🚢</span><h2>Доставка до порту</h2></div>
+
+    <div class="grid2">
+      <div class="field"><label>Тип кузова</label><button class="pick" data-pick="body"><span>Оберіть</span><i></i></button></div>
+      <div class="field"><label>Тип палива</label><button class="pick" data-pick="fuel"><span>Оберіть</span><i></i></button></div>
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label>Штат</label><button class="pick" data-pick="state"><span>Оберіть</span><i></i></button></div>
+      <div class="field"><label>Місто аукціону</label><button class="pick" data-pick="city"><span>Оберіть</span><i></i></button></div>
+    </div>
+
+    <div class="portline hidden" id="portLine">Порт відправлення: <b id="portCode"></b></div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Sublot, $</label>
+        <div class="input-btn">
+          <input type="number" inputmode="decimal" id="sublotFee" placeholder="0">
+          <button class="mini" data-pick="sublot">Список</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Title, $</label>
+        <div class="input-btn">
+          <input type="number" inputmode="decimal" id="titleFee" placeholder="0">
+          <button class="mini" data-pick="title">Список</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Страхування</label>
+      <div class="seg" id="insurance">
+        <button data-v="0.9" class="on">0.9%<small>по фото з аукціону</small></button>
+        <button data-v="0.6">0.6%<small>по фото зі складу</small></button>
+        <button data-v="0">—<small>відсутнє</small></button>
+      </div>
+    </div>
+
+    <div class="res sm"><span>Вартість страхування</span><b id="rIns">$0</b></div>
+    <div class="res"><span>Ціна доставки до порту</span><b id="rPort">$0</b></div>
+  </section>
+
+  <!-- 3. МИТНІ -->
+  <section class="glass card" id="customsCard">
+    <div class="card__head"><span class="ico">🧾</span><h2>Митні платежі</h2></div>
+
+    <div class="grid2">
+      <div class="field" id="yearBox"><label>Рік випуску</label><button class="pick" data-pick="year"><span>Оберіть</span><i></i></button></div>
+      <div class="field" id="engBox"><label>Об'єм двигуна, л</label><button class="pick" data-pick="engine"><span>Оберіть</span><i></i></button></div>
+      <div class="field hidden" id="battBox"><label>Батарея, кВт·год</label><input type="number" inputmode="decimal" id="battery" placeholder="Напр. 75"></div>
+      <div class="field hidden" id="motoBox"><label>Об'єм, см³</label><button class="pick" data-pick="moto"><span>Оберіть</span><i></i></button></div>
+    </div>
+
+    <div class="res"><span>Сума митних платежів</span><b id="rCustoms">$0</b></div>
+    <div class="note">Рік випуску береться модельний. Для точного розрахунку вкажіть фактичний рік і звіртесь з даними аукціону.</div>
+  </section>
+
+  <!-- 4. ПОСЛУГИ -->
+  <section class="glass card">
+    <div class="card__head"><span class="ico">🤝</span><h2>Послуги</h2></div>
+    <div class="grid2">
+      <div class="field"><label>Експедиторські послуги, $</label><input type="number" inputmode="decimal" id="service" value="349"></div>
+      <div class="field"><label>Комісія за обслуговування, $</label><input type="number" inputmode="decimal" id="serve" value="500"></div>
+    </div>
+  </section>
+
+  <!-- 5. ПО УКРАЇНІ -->
+  <section class="glass card" id="uaCard">
+    <div class="card__head"><span class="ico">📍</span><h2>Адресна доставка по Україні</h2></div>
+    <div class="grid2">
+      <div class="field"><label>Область</label><button class="pick" data-pick="region"><span>Оберіть</span><i></i></button></div>
+      <div class="field"><label>Місто</label><button class="pick" data-pick="uacity"><span>Оберіть</span><i></i></button></div>
+    </div>
+    <div class="res"><span>Ціна комплексної доставки</span><b id="rUa">$0</b></div>
+    <div class="note">Включає адресну доставку, брокера, ПРР, стоянку в Клайпеді/Львові та страхування на всіх етапах. Доставка в адміністративних межах обраного міста.</div>
+  </section>
+
+  <!-- 6. РЕМОНТ -->
+  <section class="glass card">
+    <button class="addrepair" id="repairToggle"><i>+</i> Додати приблизну вартість ремонту</button>
+    <div class="field hidden" id="repairBox" style="margin-top:14px">
+      <label>Вартість ремонту, $</label>
+      <input type="number" inputmode="decimal" id="repair" placeholder="0">
+    </div>
+  </section>
+
+  <div class="warn hidden" id="managerNote">
+    Для пікапів та VAN розмитнення й доставка по Україні рахуються індивідуально — зверніться до менеджера.
+  </div>
+
+  <div class="warn hidden" id="incomplete">* Розрахунок неповний — заповніть усі поля</div>
+
+  <!-- ПІДСУМОК -->
+  <section class="glass card total-card">
+    <div class="card__head"><span class="ico">💰</span><h2>Повна вартість</h2></div>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="total">
+      <span>Разом</span>
+      <b id="rTotal">$0</b>
+    </div>
+    <div class="total-uah" id="rTotalUah">≈ 0 ₴</div>
+  </section>
+
+  <!-- КОНТАКТИ -->
+  <section class="glass card contacts">
+    <div class="card__head"><span class="ico">💬</span><h2>Звʼязок з менеджером</h2></div>
+    <a class="btn btn--primary" id="tgBtn" href="https://t.me/evvgenij" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9.8 16.3l-.4 4.2c.5 0 .8-.2 1.1-.5l2.6-2.5 5.4 4c1 .5 1.7.3 2-.9l3.5-16.4c.3-1.4-.5-2-1.5-1.6L1.2 9.9C-.2 10.4-.1 11.2 1 11.5l5.5 1.7L19.4 5.4c.6-.4 1.2-.2.7.2z"/></svg>
+      Написати в Telegram
+    </a>
+    <a class="btn" href="tel:+380505155904">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.7.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 013 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.7.1.3 0 .7-.2 1l-2.3 2.1z"/></svg>
+      +380 50 515 59 04
+    </a>
+    <button class="btn btn--ghost" id="copyBtn">Скопіювати розрахунок</button>
+  </section>
+
+  <footer class="foot"><div id="rates">Курс НБУ: $1 = 44.70 ₴ · €1 = 51.87 ₴</div><div style="margin-top:4px">Розрахунок є попереднім і не є публічною офертою</div></footer>
+</main>
+
+<div class="sticky glass" id="sticky">
+  <div class="sticky__l"><span>Повна вартість</span><b id="sTotal">$0</b></div>
+  <a class="sticky__b" href="https://t.me/evvgenij" target="_blank" rel="noopener" id="sBtn">Замовити</a>
+</div>
+
+<!-- PICKER -->
+<div class="sheet-wrap hidden" id="sheet">
+  <div class="sheet-bg"></div>
+  <div class="sheet glass">
+    <div class="sheet__grip"></div>
+    <div class="sheet__head">
+      <h3 id="sheetTitle">Оберіть</h3>
+      <button id="sheetClose">Готово</button>
+    </div>
+    <div class="sheet__search hidden" id="sheetSearchBox">
+      <input id="sheetSearch" placeholder="Пошук…" autocomplete="off">
+    </div>
+    <div class="sheet__list" id="sheetList"></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
