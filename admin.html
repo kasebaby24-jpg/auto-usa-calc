@@ -142,6 +142,22 @@
   </div>
 
   <div class="glass card">
+    <div class="sect">Telegram-бот</div>
+    <div class="row">
+      <div class="lbl">Адреса калькулятора<small>Її відкриває кнопка в боті. Міняти треба лише якщо переїхав сайт</small></div>
+      <input type="text" id="appUrl" placeholder="https://…" style="width:100%;flex:1 1 auto;margin-top:6px">
+    </div>
+    <button class="btn" id="tgSetup" style="margin-top:12px">Підключити бота</button>
+    <div class="msg ok hidden" id="tgOk" style="margin-top:10px"></div>
+    <div class="msg err hidden" id="tgErr" style="margin-top:10px"></div>
+    <div class="hint">
+      Натисніть, щоб бот почав відповідати на повідомлення: на «/start» він привітається
+      і покаже кнопку «Відкрити калькулятор». Заодно оновиться опис бота й кнопка меню.
+      Потрібно один раз — після цього все працює саме.
+    </div>
+  </div>
+
+  <div class="glass card">
     <div class="sect">Контакти в додатку</div>
     <div class="row">
       <div class="lbl">Telegram<small>Без «@»</small></div>
@@ -175,7 +191,7 @@ var API = 'https://dry-cherry-8689.kasebaby24.workers.dev';
 var NUM = ['serviceBase','serve','servicePickupEur','serviceVanEur','portMargin','uaMargin',
            'insurancePct','transferPct','transferPctBigLot','transferBigLotFrom','transferUaPct',
            'feeDiscountPct','lotDiscountPct'];
-var TXT = ['contactTg','contactPhone'];
+var TXT = ['contactTg','contactPhone','appUrl'];
 var $ = function (s) { return document.querySelector(s); };
 var KEY = '';
 
@@ -281,6 +297,24 @@ $('#save').addEventListener('click', function () {
     .catch(function () {
       $('#save').disabled = false;
       show('errMsg', 'Сервер не відповідає. Спробуйте ще раз.', true);
+    });
+});
+
+$('#tgSetup').addEventListener('click', function () {
+  var b = this;
+  b.disabled = true;
+  b.textContent = 'Підключаємо…';
+  show('tgOk', '', false); show('tgErr', '', false);
+  fetch(API + '/tg-setup', { method: 'POST', headers: { 'X-Admin-Key': KEY } })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      b.disabled = false; b.textContent = 'Підключити бота';
+      if (d.ok) show('tgOk', 'Готово. Бот ' + (d.bot || '') + ' тепер відповідає на повідомлення. Напишіть йому /start для перевірки.', true);
+      else      show('tgErr', d.error || 'Не вдалося підключити.', true);
+    })
+    .catch(function () {
+      b.disabled = false; b.textContent = 'Підключити бота';
+      show('tgErr', 'Сервер не відповідає.', true);
     });
 });
 
