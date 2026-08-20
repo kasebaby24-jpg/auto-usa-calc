@@ -20,6 +20,8 @@ var CFG = {
   insurancePct: 0.9,     // страхування — враховане в доставці, клієнту не показується
   transferPct: 3, transferPctBigLot: 2.9, transferBigLotFrom: 10000,
   transferUaPct: 1, showTransfer: 1,
+  feeDiscountPct: 0,     // знижка замовника на збори аукціону, %
+  lotDiscountPct: 0,     // знижка на підсумок «лот зі зборами», %
   contactTg: 'evvgenij', contactPhone: '+380505155904'
 };
 
@@ -77,14 +79,17 @@ function calc() {
   var lot  = +S.lotPrice || 0;
   var isBig= (S.body === 'pickup' || S.body === 'van');
 
-  /* --- 1. ціна лоту зі зборами --- */
-  var lotTotal = 0;
+  /* --- 1. ціна лоту зі зборами ---
+     Збори рахуємо окремо від самої ставки: так до них можна застосувати
+     знижку замовника (дилерський акаунт на аукціоні часто дає нижчі збори),
+     не чіпаючи ціну самого авто. */
+  var lotTotal = 0, feeSum = 0;
   if (lot) {
     if (P === 6) {
-      lotTotal = lot + (+S.auctionFee || 0);
+      feeSum = +S.auctionFee || 0;
     } else {
       var L = D.fees[P][S.body === 'van' ? 'heavy' : 'standard'];
-      var a = lot;
+      var a = 0;
       if (L['3'] && L['3'][0]) a += L['3'][0][4];        // фікс. збір типу 3
       if (L['4'] && L['4'][0]) a += L['4'][0][4];        // фікс. збір типу 4
       if ((P === 1 || P === 4) && g != 1) a += 55;       // gate fee
@@ -102,8 +107,13 @@ function calc() {
           }
         }
       });
-      lotTotal = a;
+      feeSum = a;
     }
+    /* знижка замовника на збори аукціону */
+    if (CFG.feeDiscountPct > 0) feeSum = feeSum * (1 - CFG.feeDiscountPct / 100);
+    lotTotal = lot + feeSum;
+    /* знижка на весь підсумок «лот зі зборами» */
+    if (CFG.lotDiscountPct > 0) lotTotal = lotTotal * (1 - CFG.lotDiscountPct / 100);
   }
   lotTotal = parseInt(lotTotal, 10) || 0;
 
@@ -248,7 +258,7 @@ var PICKERS = {
               return out; }, cur: function(){ return S.engine; }, set: function(v){ S.engine=+v; save(); update(); } },
   moto:   { title: "Об'єм двигуна, см³", search: true, items: function(){ return D.motoEngines.map(function(c){return {id:c,n:c+' см³'};}); }, cur: function(){ return S.moto; }, set: function(v){ S.moto=+v; save(); update(); } },
   region: { title: 'Область',     search: true,  items: function(){ return D.uaRegions.map(function(o){return {id:o.id,n:o.n};}); }, cur: function(){ return S.regionId; }, set: function(v){ S.regionId=+v; S.uaCityId=0; save(); update(); } },
-  uacity: { title: 'Місто доставки', search: true, items: function(){ return uaCitiesList().map(function(o){return {id:o.id,n:o.n,sub:'$'+o.p};}); }, cur: function(){ return S.uaCityId; }, set: function(v){ S.uaCityId=+v; save(); update(); } },
+  uacity: { title: 'Місто доставки', search: true, items: function(){ return uaCitiesList().map(function(o){return {id:o.id,n:o.n};}); }, cur: function(){ return S.uaCityId; }, set: function(v){ S.uaCityId=+v; save(); update(); } },
   sublot: { title: 'Оберіть SUBLOT', search: true, items: function(){ return D.sublots.map(function(o,i){return {id:'s'+i,n:o.n,sub:'$'+o.p,val:o.p};}); }, cur: function(){ return null; }, set: function(v,it){ S.sublot=it.val; $('#sublotFee').value=it.val; save(); update(); } },
   title:  { title: 'Оберіть TITLE',  search: true, items: function(){ return D.titles.map(function(o,i){return {id:'t'+i,n:o.n,sub:'$'+o.p+(o.d?' · '+o.d+' дн':'')  ,val:o.p};}); }, cur: function(){ return null; }, set: function(v,it){ S.title=it.val; $('#titleFee').value=it.val; save(); update(); } }
 };

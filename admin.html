@@ -129,6 +129,19 @@
   </div>
 
   <div class="glass card">
+    <div class="sect">Знижка замовника</div>
+    <div class="row">
+      <div class="lbl">Знижка на збори аукціону, %<small>Якщо у вас дилерський акаунт із нижчими зборами. Ціна самого авто не змінюється</small></div>
+      <input type="number" id="feeDiscountPct" step="0.1">
+    </div>
+    <div class="row">
+      <div class="lbl">Знижка на «лот зі зборами», %<small>Якщо знижка дається від усієї суми, а не тільки від зборів</small></div>
+      <input type="number" id="lotDiscountPct" step="0.1">
+    </div>
+    <div class="hint" style="margin-top:4px">Зазвичай заповнюють лише одне з двох полів. Якщо не знаєте — лишіть обидва по нулю, розрахунок буде за звичайними тарифами аукціону.</div>
+  </div>
+
+  <div class="glass card">
     <div class="sect">Контакти в додатку</div>
     <div class="row">
       <div class="lbl">Telegram<small>Без «@»</small></div>
@@ -160,7 +173,8 @@
 var API = 'https://dry-cherry-8689.kasebaby24.workers.dev';
 
 var NUM = ['serviceBase','serve','servicePickupEur','serviceVanEur','portMargin','uaMargin',
-           'insurancePct','transferPct','transferPctBigLot','transferBigLotFrom','transferUaPct'];
+           'insurancePct','transferPct','transferPctBigLot','transferBigLotFrom','transferUaPct',
+           'feeDiscountPct','lotDiscountPct'];
 var TXT = ['contactTg','contactPhone'];
 var $ = function (s) { return document.querySelector(s); };
 var KEY = '';
