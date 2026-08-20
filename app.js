@@ -541,7 +541,7 @@ window.addEventListener('scroll', function () {
    Поки порожньо — блок пошуку прихований і додаток працює як звичайний
    калькулятор. Встав адресу — блок з'явиться сам.
    ================================================================== */
-var LOT_API = '';
+var LOT_API = 'https://dry-cherry-8689.kasebaby24.workers.dev';
 
 var ST_NAMES = {
   alabama:'AL',alaska:'AK',arizona:'AZ',arkansas:'AR',california:'CA',colorado:'CO',
